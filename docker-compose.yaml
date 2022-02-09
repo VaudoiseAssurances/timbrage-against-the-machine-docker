@@ -1,22 +1,48 @@
-version: '3.1'
+version: '3.8'
 
 services:
+
+  traefik:
+    image: packages.vaudoise.ch/dockerhub/traefik:latest
+    command:
+      --providers.docker=true
+
+    labels:
+      - traefik.enable=false
+
+    ports:
+      - 80:80
+      - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
   tatm-bff:
     build: 
       context: ./bff
       dockerfile: ./Dockerfile
-    ports: 
-      - 3000:3000
+
     depends_on: 
       - packages.vaudoise.ch/dockerhub/node:lts-alpine
 
+    # traefik
+    labels:
+      - traefik.http.routers.tatm-bff.rule=Host(`localhost`)&& PathPrefix(`/api`)
 
+    environment:
+      - APP_NAME=bff
+ 
   tatm-front:
     build: 
       context: ./frontend
       dockerfile: ./Dockerfile
-    ports: 
-      - 4200:80
+
     depends_on: 
       - packages.vaudoise.ch/dockerhub/nginx
+      
+    # traefik
+    labels:
+      - traefik.http.routers.tatm-front.rule=Host(`localhost`)
+
+    environment:
+      - APP_NAME=front
+      
